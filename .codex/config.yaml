@@ -1,0 +1,54 @@
+# Agent Defense Configuration
+
+# Domain trust tiers
+trusted_domains:
+  - github.com
+  - arxiv.org
+  - wikipedia.org
+  - docs.python.org
+  - developer.mozilla.org
+  - stackoverflow.com
+
+# Untrusted domain hints (URL shorteners, etc.)
+untrusted_hints:
+  - bit.ly
+  - tinyurl.com
+  - t.co
+  - goo.gl
+  - ow.ly
+  - cutt.ly
+  - rb.gy
+
+# Risk tier overrides (tool_name: tier)
+# Tiers: LOW, MEDIUM, HIGH, CRITICAL
+risk_overrides:
+  "git push": MEDIUM
+  "npm install": LOW
+  "pip install": LOW
+
+# Contamination window settings
+contamination_window:
+  max_turns: 3
+  decay_seconds: 120
+  tier3_escalation: true
+  goal_shift_similarity_threshold: 0.2
+
+# Canary token settings
+canary:
+  env_var_count: 3
+  url_count: 3
+  file_path_count: 3
+  rotation_interval_days: 7
+
+# Alerting
+discord_webhook: ""  # Set for CRITICAL/HIGH Discord alerts
+alert_on_medium: false  # If true, MEDIUM events also trigger alerts
+
+# Behavioral monitoring
+behavior_monitor:
+  max_history: 50
+  rapid_succession_threshold: 5  # Alert if >5 MEDIUM actions in rapid succession
+
+# Logging
+log_path: "references/defense_events.db"
+log_retention_days: 90

