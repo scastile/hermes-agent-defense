@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "tiers": {
+    "CRITICAL": {
+      "policy": "block",
+      "patterns": [
+        "rm -rf",
+        "git rm -r",
+        "DROP TABLE",
+        "sudo",
+        "mkfs",
+        "format",
+        "shred"
+      ]
+    },
+    "HIGH": {
+      "policy": "pause",
+      "patterns": [
+        "git push --force",
+        "curl.*-d.*http",
+        "docker rm -f",
+        "kubectl delete"
+      ]
+    },
+    "MEDIUM": {
+      "policy": "log",
+      "patterns": [
+        "git commit",
+        "pip install",
+        "npm install",
+        "apt-get remove"
+      ]
+    },
+    "LOW": {
+      "policy": "allow",
+      "tools": [
+        "read_file",
+        "web_search",
+        "browser_navigate",
+        "web_extract"
+      ]
+    }
+  },
+  "contamination_window": {
+    "max_turns": 3,
+    "decay_seconds": 120,
+    "tier3_escalation": true
+  }
+}

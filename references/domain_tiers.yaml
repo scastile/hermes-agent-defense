@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "tier_1_trusted": {
+    "domains": [
+      "github.com",
+      "arxiv.org",
+      "wikipedia.org",
+      "docs.python.org",
+      "developer.mozilla.org",
+      "stackoverflow.com"
+    ]
+  },
+  "tier_2_standard": {
+    "default": true
+  },
+  "tier_3_untrusted": {
+    "shorteners": [
+      "bit.ly",
+      "tinyurl.com",
+      "t.co",
+      "goo.gl",
+      "ow.ly",
+      "cutt.ly",
+      "rb.gy"
+    ]
+  }
+}

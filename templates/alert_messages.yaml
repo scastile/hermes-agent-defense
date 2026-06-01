@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "critical_blocked": {
+    "emoji": "\ud83d\udea8",
+    "title": "AGENT DEFENSE: {action} BLOCKED"
+  },
+  "high_suspicious": {
+    "emoji": "\u26a0\ufe0f",
+    "title": "AGENT DEFENSE: Suspicious {action}"
+  },
+  "medium_sanitized": {
+    "emoji": "\ud83d\udd0d",
+    "title": "Defense: {count} patterns sanitized"
+  },
+  "canary_leak": {
+    "emoji": "\ud83d\udea8",
+    "title": "CANARY TOKEN LEAKED: {canary_name}"
+  },
+  "memory_poisoning": {
+    "emoji": "\u26a0\ufe0f",
+    "title": "Memory entry blocked: {patterns}"
+  },
+  "behavioral_anomaly": {
+    "emoji": "\ud83d\udea8",
+    "title": "Behavioral anomaly: {pattern}"
+  }
+}
